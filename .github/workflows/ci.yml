@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      # We spin up PostgreSQL and Redis services because they are dependencies
+      # of the app and worker, even though unit tests currently don't hit them.
+      # This ensures integration-ready test suite capability.
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: jobhunt
+          POSTGRES_PASSWORD: jobhunt
+          POSTGRES_DB: jobhunt
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+        cache-dependency-path: |
+          apps/api/requirements.txt
+          workers/requirements.txt
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r apps/api/requirements.txt -r workers/requirements.txt pytest pytest-asyncio
+
+    - name: Run pytest
+      env:
+        DATABASE_URL: postgresql+asyncpg://jobhunt:jobhunt@localhost:5432/jobhunt
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test-secret-key-for-ci-runs
+        ENVIRONMENT: test
+      run: |
+        pytest
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: apps/web/package.json
+
+    - name: Install dependencies
+      working-directory: apps/web
+      run: npm install
+
+    - name: Run linting
+      working-directory: apps/web
+      run: npm run lint
+
+    - name: Run build
+      working-directory: apps/web
+      run: npm run build
