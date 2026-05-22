@@ -16,6 +16,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Downcase repository name
+      run: |
+        echo "IMAGE_REPOSITORY=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
     - name: Set up Docker Buildx
       uses: actions/setup-buildx-action@v3
 
@@ -31,7 +35,7 @@ jobs:
       id: meta-api
       uses: docker/metadata-action@v5
       with:
-        images: ghcr.io/${{ github.repository }}/api
+        images: ghcr.io/${{ env.IMAGE_REPOSITORY }}/api
         tags: |
           type=semver,pattern={{version}}
           type=sha,format=long
@@ -53,7 +57,7 @@ jobs:
       id: meta-worker
       uses: docker/metadata-action@v5
       with:
-        images: ghcr.io/${{ github.repository }}/worker
+        images: ghcr.io/${{ env.IMAGE_REPOSITORY }}/worker
         tags: |
           type=semver,pattern={{version}}
           type=sha,format=long
@@ -75,7 +79,7 @@ jobs:
       id: meta-web
       uses: docker/metadata-action@v5
       with:
-        images: ghcr.io/${{ github.repository }}/web
+        images: ghcr.io/${{ env.IMAGE_REPOSITORY }}/web
         tags: |
           type=semver,pattern={{version}}
           type=sha,format=long
