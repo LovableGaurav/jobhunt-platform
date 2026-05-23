@@ -71,5 +71,16 @@ services:
       - redis
       - worker
 
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
