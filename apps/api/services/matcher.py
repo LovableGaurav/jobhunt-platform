@@ -30,7 +30,7 @@ class MatcherService:
         return self._openai
 
     async def embed_text(self, text: str) -> list[float]:
-        if not settings.openai_api_key:
+        if not settings.openai_api_key or "your-key-here" in settings.openai_api_key:
             raise ValueError("OPENAI_API_KEY is required for embeddings")
         response = await self.openai.embeddings.create(
             model=settings.openai_embedding_model,
