@@ -41,8 +41,11 @@ class MatcherService:
     async def embed_user_resume(self, user: User) -> User:
         if not user.resume_text:
             return user
-        embedding = await self.embed_text(user.resume_text)
-        return await self.user_repo.update_resume(user, resume_embedding=embedding)
+        try:
+            embedding = await self.embed_text(user.resume_text)
+            return await self.user_repo.update_resume(user, resume_embedding=embedding)
+        except Exception:
+            return user
 
     async def embed_job(self, job: JobPosting) -> JobPosting:
         text = f"{job.title}\n{job.company}\n{job.description}"
